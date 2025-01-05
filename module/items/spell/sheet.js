@@ -32,18 +32,18 @@ export class CoC7SpellSheet extends ItemSheet {
     sheetData.isKeeper = game.user.isGM
     sheetData.isOwner = this.item.isOwner
 
-    sheetData.enrichedDescriptionValue = TextEditor.enrichHTML(
+    sheetData.enrichedDescriptionValue = await TextEditor.enrichHTML(
       sheetData.data.system.description.value,
       {
-        async: false,
+        async: true,
         secrets: sheetData.editable
       }
     )
 
-    sheetData.enrichedDescriptionKeeper = TextEditor.enrichHTML(
+    sheetData.enrichedDescriptionKeeper = await TextEditor.enrichHTML(
       sheetData.data.system.description.keeper,
       {
-        async: false,
+        async: true,
         secrets: sheetData.editable
       }
     )
@@ -56,7 +56,11 @@ export class CoC7SpellSheet extends ItemSheet {
     html.find('.option').click(event => this.modifyType(event))
     html.find('#cast-spell').click(event => {
       event.preventDefault()
-      this.item.cast()
+      this.item.cast(false)
+    })
+    html.find('#cast-spell-hidden').click(event => {
+      event.preventDefault()
+      this.item.cast(true)
     })
   }
 

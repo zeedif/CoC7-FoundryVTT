@@ -231,7 +231,21 @@ export function registerSettings () {
     default: false,
     type: Boolean
   })
-
+  /** Default behavior when NPC is created on a scene */
+  game.settings.register('CoC7', 'tokenDropMode', {
+    name: 'SETTINGS.TokenDropMode',
+    hint: 'SETTINGS.TokenDropModeHint',
+    scope: 'world',
+    config: true,
+    default: 'ask',
+    type: String,
+    choices: {
+      ask: 'SETTINGS.TokenDropModeAsk',
+      roll: 'SETTINGS.TokenDropModeRoll',
+      average: 'SETTINGS.TokenDropModeAverage',
+      ignore: 'SETTINGS.TokenDropModeIgnore'
+    }
+  })
   /**
    * Game Artwork Settings
    */
@@ -608,6 +622,13 @@ export function registerSettings () {
   })
   game.settings.register('CoC7', 'InvestigatorWizardQuickFire', {
     name: 'Quick fire setup values',
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: []
+  })
+  game.settings.register('CoC7', 'InvestigatorWizardChooseValues', {
+    name: 'Choose where to place rolled characteristics',
     scope: 'world',
     config: false,
     type: Array,

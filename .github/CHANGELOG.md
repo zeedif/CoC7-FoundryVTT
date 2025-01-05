@@ -9,6 +9,167 @@ Happy gaming !
 
 When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
 
+## Version 7.6
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Add ChatMessage Roll.0 pushing/pushed and luckSpent values
+- Fix ranged combat damage if no dice are rolled
+
+## Version 7.5
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix CoC ID not working if using fall back translations
+- Fix manually adding sanity loss / immunity reasons
+- Modify Roll to indicated active dice and success level
+- Remove bonus/penalty slider from ranged combat chat message replace with buttons
+- Update to French localization, thanks to @vonv #1634
+
+## Version 7.4
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Allow .38 to be the start of a Firearms (Handgun) name
+- Attempt to add skills when weapon with CoC ID skill names are dropped on Actor sheets
+- Fix half DB calculations for build size 3 and higher
+
+## Version 7.3
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix Range Combat damage rolls
+- Update to Japanese localization, thanks to @doumoku #1614
+- Update to Ukrainian localization, thanks to @JornieNonsubia #1611
+
+## Version 7.1
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix FoundryVTT v11 breaking issue
+
+## Version 7.0
+
+**_!! FoundryVTT v10 is no longer supported !!_**
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Add placeholders for SAN loss to localization, thanks to @lozanoje #1587
+- Allow weapon ranges to be based on characteristics
+- Explicitly set FoundryVTT v12 version of grid values, thanks to @Vicnasc #1564
+- Fix compendium filtering
+- Fix db/2 calculation, thanks to @lozanoje #1601
+- Fix ranged weapons not adding DB/2
+- Preparing the system for upcoming premium content.
+- Workaround for DsN 5.0.0 to 5.0.5 bonus dice, replace bronze dice withl bronze01 dice
+- Update CoC ID functionality as per ticket #1584
+- Update token art if default and the actor image is changed
+- Update to French localization, thanks to @vonv #1580, #1581, and #1595
+- Update to German localization, thanks to @MrViso #1596
+- Update to Japanese localization, thanks to @doumoku #1586 and #1591
+- Update to Polish localization, thanks to @everyonecancode #1598
+- Update to Spanish localization, thanks to @lozanoje #1587
+
+## Version 0.10.19
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix Dhole House Actor Importer
+- Keeper button to cast spells as gmroll, thanks to @michalwy #1573
+- Use Mythos Hardened flag in Sanity workflow, thanks to @michalwy #1569
+- Update to French localization, thanks to @vonv #1570
+- Update to Polish localization, thanks to @michalwy #1576
+
+## Version 0.10.18
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix chat message rolls for Dice So Nice
+- Update to Japanese localization, thanks to @doumoku #1563
+
+## Version 0.10.17
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix chase item on FoundryVTT v12
+
+## Version 0.10.16
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix melee resolution card on FoundryVTT v12
+
+## Version 0.10.15
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix Actor Importer not storing characteristics
+- Update Actor Importer localization, thanks to @ryotai-trpg #1545
+- Update to French localization, thanks to @vonv #1546
+- Update to Italian localization, thanks to @Stefano1975t #1552
+
+## Version 0.10.14
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix calculated base values in Investigator Wizard in FoundryVTT v12
+- Fix link creation on FoundryVTT v12
+- Update to German localization, thanks to @MrViso #1539
+
+## Version 0.10.13
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Add found CoC ID name on links that use CoC ID as the selector
+- Add filter byt era to occupation in the Item Compendium
+- Add Reign Of Terror era key
+- Fix Dhole House Importer for premade investigators
+- Start implementation of Dark Ages ranged combat property
+- Add Ukrainian localization, thanks to @JornieNonsubia #1529
+- Update to German localization, thanks to @MrViso #1525
+- Update to Italian localization, thanks to @Stefano1975t #1534
+
+## Version 0.10.12
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Add width and height attributes to SVG images as the current images can break scenes in browsers that require the attributes
+- Created links can now be set as pushed rolls
+- Swap icons for enter formula/values on NPC sheet and message localization improvements, thanks to zeedif #1497
+- Fix players see "Rollable detected" even without permission for actor
+- If attempting a skill the character does not have, attempt to find and add it
+- Update to French localization, thanks to @vonv #1521
+- Update to Italian localization, thanks to @Stefano1975t #1505 and #1510
+- Update to Japanese localization, thanks to @doumoku #1496 and #1516
+- Update to Russian localization, thanks to @k0ccc #1493
+
+## Version 0.10.11
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Fix investigator wizard drag and drop for players
+- Label decaders in Real Dice - Manual Rolling module
+- Prevent cancelling casting spells from overwriting rolls with a fixed value
+- Reimplement Dice So Nice support to fix other people seeing rolled dice in their selected appearance
+
+## Version 0.10.10
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Change default font for sheetV2 to one more readable on iOS devices
+- Fix average characteristic calculations
+- Update to Italian localization, thanks to @Stefano1975t #1474
+
+## Version 0.10.9
+
+When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.
+
+- Allow additional Actor sheet interactions when editing in a compendium
+- Fix English Guide and Spanish Guide of the System, thanks to @zeedif #1458
+- Resolve issue with dropping a setup on a character sometimes not allowing Validate to be clicked
+- Resolve "Deprecated since Version 11" messages
+- Update to French localization, thanks to @vonv #1462 and #1464
+
 ## Version 0.10.8
 
 When not specified, all changes were made by @castanhocorreia, @HavlockV, and @snap01.

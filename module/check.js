@@ -153,6 +153,9 @@ export class CoC7Check {
   }
 
   get rawValueString () {
+    if (this._rawValue === 0) {
+      return '0'
+    }
     if (!this._rawValue) return undefined
     if (
       this.flatThresholdModifier &&
@@ -418,6 +421,15 @@ export class CoC7Check {
     if (oldCheck.parent) pushedRoll.parent = oldCheck.parent
     pushedRoll.pushing = true
     await pushedRoll.roll()
+    if (oldCheck.messageId) {
+      const o = await game.messages.get(oldCheck.messageId)
+      if (typeof o.rolls?.[0]?.options?.coc7Result !== 'undefined') {
+        o.rolls[0].options.coc7Result.pushing = true
+        await o.update({
+          rolls: o.rolls
+        })
+      }
+    }
     if (publish) pushedRoll.toMessage(true, card)
   }
 
@@ -466,7 +478,7 @@ export class CoC7Check {
 
   get successLevelIcons () {
     if (this.unknownDifficulty) return null
-    if (this.isSimpleRoll) return null
+    if (this.isSimpleRoll && this._rawValue !== 0) return null
     if (this.successLevel >= this.difficulty) {
       const icons = []
       for (
@@ -816,7 +828,18 @@ export class CoC7Check {
     const max = this.dice.unit.total === 0 ? 100 : 90
     const min = this.dice.unit.total === 0 ? 10 : 0
     let selected = this.dice.total - this.dice.unit.total
-
+    let firstValue = (selected === 0 ? 10 : Math.floor(selected / 10))
+    for (const d of this.dice.roll.dice) {
+      if (d instanceof CONFIG.Dice.terms.t) {
+        if (d.results[0].result === firstValue) {
+          firstValue = -1
+          d.results[0].active = true
+        } else {
+          d.results[0].active = false
+        }
+      }
+    }
+    this.dice.roll._total = this.dice.total
     for (let i = 0; i < this.dice.tens.results.length; i++) {
       const die = {}
       die.value = this.dice.tens.results[i]
@@ -838,6 +861,41 @@ export class CoC7Check {
       }
       // if( die.value == 100) die.value = "00";
       this.dices.tens.push(die)
+    }
+    this.computeCheck()
+  }
+
+  async increaseLuckSpend (luckAmount) {
+    const spendingAmount = parseInt(luckAmount, 10)
+    this.totalLuckSpent = parseInt(this.totalLuckSpent ?? 0, 10) + spendingAmount
+    const modifiedResult = Math.max(1, this.modifiedResult - this.totalLuckSpent)
+    if (modifiedResult === 1) {
+      this.successLevel = CoC7Check.successLevel.critical
+    } else if (modifiedResult <= this.extremeThreshold) {
+      this.successLevel = CoC7Check.successLevel.extreme
+    } else if (modifiedResult <= this.hardThreshold) {
+      this.successLevel = CoC7Check.successLevel.hard
+    } else if (modifiedResult <= this.rawValue) {
+      this.successLevel = CoC7Check.successLevel.regular
+    } else if (this.fumbleThreshold <= modifiedResult) {
+      this.successLevel = CoC7Check.successLevel.fumble
+    } else if (modifiedResult > this.rawValue) {
+      this.successLevel = CoC7Check.successLevel.failure
+    }
+    if (this.difficulty <= this.successLevel) {
+      this.isSuccess = true
+      this.isFailure = false
+    }
+    this.luckSpent = true
+    let remove = 0
+    for (let index = 0, maxIndex = this.increaseSuccess.length; index < maxIndex; index++) {
+      this.increaseSuccess[index].luckToSpend = this.increaseSuccess[index].luckToSpend - spendingAmount
+      if (this.increaseSuccess[index].luckToSpend < 1) {
+        remove++
+      }
+    }
+    for (let index = 0; index < remove; index++) {
+      this.increaseSuccess.shift()
     }
     this.computeCheck()
   }
@@ -1051,6 +1109,24 @@ export class CoC7Check {
 
       this.canIncreaseSuccess = this.increaseSuccess.length > 0
       if (this.isFumble) this.canIncreaseSuccess = false
+    }
+    if (this.dice) {
+      this.dice.roll.options.coc7Result = {
+        successLevel: Object.keys(CoC7Check.successLevel).find(key => CoC7Check.successLevel[key] === this.successLevel) ?? 'unknown',
+        difficultySet: !this.isUnknown,
+        passed: this.passed,
+        pushing: false,
+        pushed: this.pushing,
+        luckSpent: this.totalLuckSpent ?? 0
+      }
+    } else if (typeof this.messageId === 'string') {
+      const o = await game.messages.get(this.messageId)
+      if (typeof o.rolls?.[0]?.options?.coc7Result !== 'undefined') {
+        o.rolls[0].options.coc7Result.luckSpent = this.totalLuckSpent ?? 0
+        await o.update({
+          rolls: o.rolls
+        })
+      }
     }
 
     this.canAwardExperience =
@@ -1646,7 +1722,12 @@ export class CoC7Check {
 
     // ChatMessage.applyRollMode( chatData, this.rollMode);
     if (this.dice?.roll && !this.dice?.hideDice) {
-      chatData.roll = this.dice.roll
+      // FoundryVTT v11
+      if (foundry.utils.isNewerVersion(game.version, '11')) {
+        chatData.rolls = [this.dice.roll]
+      } else {
+        chatData.roll = this.dice.roll
+      }
       chatData.type = CONST.CHAT_MESSAGE_TYPES.ROLL
       chatData.rollMode = this.isBlind ? 'blindroll' : this.rollMode
     }

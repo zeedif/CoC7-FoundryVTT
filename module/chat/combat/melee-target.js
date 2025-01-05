@@ -18,8 +18,7 @@ export class CoC7MeleeTarget extends ChatCardActor {
     this.outnumbered = false
     this.surprised = false
     this.autoSuccess = false
-    this.advantage = false
-    this.disadvantage = false
+    this.diceModifier = 0
 
     this.messageId = null
     this.skillId = null
@@ -137,6 +136,12 @@ export class CoC7MeleeTarget extends ChatCardActor {
       ? chatHelper.hyphenToCamelCase(flagName)
       : flagName
     this[flag] = !this[flag]
+    switch (flag) {
+      case 'outnumbered':
+      case 'surprised':
+        this.diceModifier = Math.max(-2, Math.min(2, parseInt(this.diceModifier, 10) + (this[flag] ? 1 : -1)))
+        break
+    }
   }
 
   async createChatCard () {
@@ -179,13 +184,16 @@ export class CoC7MeleeTarget extends ChatCardActor {
             '<p>' + game.i18n.localize('CoC7.MessageSelectSingleUserForTarget')
           content = content + '<form id="selectform"><select name="user">'
           for (const k of owners) {
-            content =
-              content +
-              '<option value="' +
-              k +
-              '">' +
-              game.users.get(k).name +
-              '</option>'
+            const user = game.users.get(k)
+            if (user) {
+              content =
+                content +
+                '<option value="' +
+                k +
+                '">' +
+                user.name +
+                '</option>'
+            }
           }
           content = content + '</select></form></p>'
           await Dialog.prompt({
@@ -312,8 +320,7 @@ export class CoC7MeleeTarget extends ChatCardActor {
     check.difficulty = CoC7Check.difficultyLevel.regular
     check.diceModifier = 0
 
-    if (this.disadvantage) check.diceModifier -= 1
-    if (this.advantage) check.diceModifier += 1
+    if (this.diceModifier) check.diceModifier = this.diceModifier
 
     await check.roll()
     this.check = check

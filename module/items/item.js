@@ -1,5 +1,4 @@
 /* global CONFIG, foundry, game, Item, Roll, TextEditor, Token, ui, fromUuid */
-import { CoC7Parser } from '../apps/coc7-parser.js'
 import { COC7 } from '../config.js'
 import { CoC7Utilities } from '../utilities.js'
 import { CoCIDEditor } from '../apps/coc-id-editor.js'
@@ -64,6 +63,7 @@ export class CoC7Item extends Item {
     let checkedProps = {}
     let fighting
     let firearms
+    let ranged
     if (typeof COC7.eras[propertyId] !== 'undefined') {
       return CoCIDEditor.eraToggle(this, propertyId)
     } else if (this.type === 'weapon' && !override) {
@@ -143,45 +143,50 @@ export class CoC7Item extends Item {
       }
     } else if (this.type === 'skill' && !override) {
       let modif = false
-      if (propertyId === 'combat') {
-        if (!this.system.properties.combat) {
-          // Close combat by default
-          if (!this.system.properties.firearm) {
+      switch (propertyId) {
+        case 'combat':
+          if (!this.system.properties.combat) {
+            // Close combat by default
             fighting = true
-          } else firearms = true
-        } else {
-          checkedProps = {
-            'system.properties.combat': false,
-            'system.properties.special': false,
-            'system.properties.fighting': false,
-            'system.properties.firearm': false,
-            'system.specialization': '',
-            name: this.system.skillName
+          } else {
+            checkedProps = {
+              'system.properties.combat': false,
+              'system.properties.special': false,
+              'system.properties.fighting': false,
+              'system.properties.firearm': false,
+              'system.properties.ranged': false,
+              'system.specialization': '',
+              name: this.system.skillName
+            }
           }
-        }
-        modif = true
-      }
-
-      if (propertyId === 'fighting') {
-        if (!this.system.properties.fighting) {
-          firearms = false
-          fighting = true
-        } else {
-          firearms = true
-          fighting = false
-        }
-        modif = true
-      }
-
-      if (propertyId === 'firearm') {
-        if (!this.system.properties.firearm) {
-          firearms = true
-          fighting = false
-        } else {
-          firearms = false
-          fighting = true
-        }
-        modif = true
+          modif = true
+          break
+        case 'fighting':
+          if (!this.system.properties.fighting) {
+            modif = true
+            firearms = false
+            ranged = false
+            fighting = true
+          }
+          break
+        case 'firearm':
+          if (!this.system.properties.firearm) {
+            modif = true
+            firearms = true
+            ranged = false
+            fighting = false
+          }
+          modif = true
+          break
+        case 'ranged':
+          if (!this.system.properties.ranged) {
+            modif = true
+            firearms = false
+            ranged = true
+            fighting = false
+          }
+          modif = true
+          break
       }
 
       if (modif) {
@@ -190,6 +195,7 @@ export class CoC7Item extends Item {
           checkedProps = {
             'system.properties.fighting': true,
             'system.properties.firearm': false,
+            'system.properties.ranged': false,
             'system.properties.combat': true,
             'system.properties.special': true
           }
@@ -200,17 +206,32 @@ export class CoC7Item extends Item {
           checkedProps.name = parts.name
           checkedProps.skillName = parts.skillName
           checkedProps['system.specialization'] = parts.specialization
-        }
-        if (firearms) {
+        } else if (firearms) {
           checkedProps = {
             'system.properties.fighting': false,
             'system.properties.firearm': true,
+            'system.properties.ranged': false,
             'system.properties.combat': true,
             'system.properties.special': true
           }
           const parts = CoC7Item.getNamePartsSpec(
             this.system.skillName,
             game.i18n.localize(COC7.firearmSpecializationName)
+          )
+          checkedProps.name = parts.name
+          checkedProps.skillName = parts.skillName
+          checkedProps['system.specialization'] = parts.specialization
+        } else if (ranged) {
+          checkedProps = {
+            'system.properties.fighting': false,
+            'system.properties.firearm': false,
+            'system.properties.ranged': true,
+            'system.properties.combat': true,
+            'system.properties.special': true
+          }
+          const parts = CoC7Item.getNamePartsSpec(
+            this.system.skillName,
+            game.i18n.localize(COC7.rangedSpecializationName)
           )
           checkedProps.name = parts.name
           checkedProps.skillName = parts.skillName
@@ -225,6 +246,7 @@ export class CoC7Item extends Item {
           'system.properties.special': false,
           'system.properties.fighting': false,
           'system.properties.firearm': false,
+          'system.properties.ranged': false,
           'system.properties.combat': false,
           'system.specialization': '',
           name: this.system.skillName
@@ -520,15 +542,36 @@ export class CoC7Item extends Item {
   }
 
   get baseRange () {
-    return parseInt(this.system.range.normal.value)
+    const result = parseInt(this.system.range.normal.value)
+    if (!isNaN(result)) {
+      return result
+    }
+    return new Roll(
+      this.system.range.normal.value,
+      this.parent?.parseCharacteristics() ?? {}
+    ).evaluateSync().total
   }
 
   get longRange () {
-    return parseInt(this.system.range.long.value)
+    const result = parseInt(this.system.range.long.value)
+    if (!isNaN(result)) {
+      return result
+    }
+    return new Roll(
+      this.system.range.long.value,
+      this.parent?.parseCharacteristics() ?? {}
+    ).evaluateSync().total
   }
 
   get extremeRange () {
-    return parseInt(this.system.range.extreme.value)
+    const result = parseInt(this.system.range.extreme.value)
+    if (!isNaN(result)) {
+      return result
+    }
+    return new Roll(
+      this.system.range.extreme.value,
+      this.parent?.parseCharacteristics() ?? {}
+    ).evaluateSync().total
   }
 
   get skillProperties () {
@@ -555,9 +598,7 @@ export class CoC7Item extends Item {
       let value
       try {
         value = Math.floor(
-          new Roll(data.system.base, parsed).evaluate({
-            maximize: true
-          }).total
+          new Roll(data.system.base, parsed)[(!foundry.utils.isNewerVersion(game.version, '12') ? 'evaluate' : 'evaluateSync')/* // FoundryVTT v11 */]({ maximize: true }).total
         )
       } catch (err) {
         value = 0
@@ -583,9 +624,7 @@ export class CoC7Item extends Item {
       let value
       try {
         value = Math.floor(
-          new Roll(this.system.base, parsed).evaluate({
-            maximize: true
-          }).total
+          new Roll(this.system.base, parsed)[(!foundry.utils.isNewerVersion(game.version, '12') ? 'evaluate' : 'evaluateSync')/* // FoundryVTT v11 */]({ maximize: true }).total
         )
       } catch (err) {
         value = 0
@@ -713,9 +752,9 @@ export class CoC7Item extends Item {
    * @param {Object} htmlOptions    Options used by the TextEditor.enrichHTML function
    * @return {Object}               An object of chat data to render
    */
-  getChatData (htmlOptions = {}) {
-    // FoundryVTT v10
-    htmlOptions.async = false
+  async getChatData (htmlOptions = {}) {
+    // FoundryVTT v11
+    htmlOptions.async = true
     const data = foundry.utils.duplicate(this.system)
     // Fix : data can have description directly in field, not under value.
     if (typeof data.description === 'string') {
@@ -733,16 +772,14 @@ export class CoC7Item extends Item {
     const labels = []
 
     // Rich text description
-    data.description.value = TextEditor.enrichHTML(
+    data.description.value = await TextEditor.enrichHTML(
       data.description.value,
       htmlOptions
     )
-    data.description.value = CoC7Parser.enrichHTML(data.description.value)
-    data.description.special = TextEditor.enrichHTML(
+    data.description.special = await TextEditor.enrichHTML(
       data.description.special,
       htmlOptions
     )
-    data.description.special = CoC7Parser.enrichHTML(data.description.special)
 
     // Item type specific properties
     const props = []

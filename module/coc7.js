@@ -8,7 +8,6 @@ import { CoC7Combat, rollInitiative } from './combat.js'
 import { COC7 } from './config.js'
 import { Updater } from './updater.js'
 import { CoC7Utilities } from './utilities.js'
-import { CoC7Parser } from './apps/coc7-parser.js'
 import { CoC7Check } from './check.js'
 import { CoC7Menu } from './menu.js'
 import { DamageCard } from './chat/cards/damage.js'
@@ -23,6 +22,10 @@ import { CoC7ChaseSheet } from './items/chase/sheet.js'
 import { CoC7Socket } from './hooks/socket.js'
 import { CoC7SystemSocket } from './apps/coc7-system-socket.js'
 import { DropActorSheetData } from './hooks/drop-actor-sheet-data.js'
+import CoC7ClickableEvents from './apps/coc7-clickable-events.js'
+import DrawNote from './hooks/draw-note.js'
+import RenderCoC7JournalSheet from './hooks/render-coc7-journal-sheet.js'
+import RenderJournalTextPageSheet from './hooks/render-journal-text-page-sheet.js'
 
 // Card init
 import { initECC } from './common/chatcardlib/src/chatcardlib.js'
@@ -140,7 +143,15 @@ Hooks.once('init', async function () {
     },
     eras: (era, name) => {
       COC7.eras[era] = name
-    }
+    },
+    ClickRegionLeftUuid: CoC7ClickableEvents.ClickRegionLeftUuid,
+    ClickRegionRightUuid: CoC7ClickableEvents.ClickRegionRightUuid,
+    hasPermissionDocument: CoC7ClickableEvents.hasPermissionDocument,
+    InSceneRelativeTeleport: CoC7ClickableEvents.InSceneRelativeTeleport,
+    MapPinToggle: CoC7ClickableEvents.MapPinToggle,
+    openDocument: CoC7ClickableEvents.openDocument,
+    toggleTileJournalPages: CoC7ClickableEvents.toggleTileJournalPages,
+    toScene: CoC7ClickableEvents.toScene
   }
   Combat.prototype.rollInitiative = rollInitiative
 })
@@ -300,6 +311,7 @@ Hooks.on('updateChatMessage', (chatMessage, chatData, diff, speaker) =>
 )
 
 Hooks.on('ready', async () => {
+  // CONFIG.compatibility.mode = CONST.COMPATIBILITY_MODES.SILENT
   await Updater.checkForUpdate()
 
   // game.CoC7.menus = new CoC7Menu();
@@ -467,15 +479,11 @@ Hooks.on('getSceneControlButtons', (/* controls */) => {
 
 // Hooks.on('renderSceneControls', () => CoC7Utilities.updateCharSheets());
 // Hooks.on('renderSceneNavigation', () => CoC7Utilities.updateCharSheets());
-Hooks.on('renderItemSheet', CoC7Parser.ParseSheetContent)
-Hooks.on('renderJournalPageSheet', CoC7Parser.ParseSheetContent)
-Hooks.on('renderActorSheet', CoC7Parser.ParseSheetContent)
 // Sheet css options
 // Hooks.on('renderCoC7CharacterSheet', CoC7CharacterSheet.renderSheet);
 Hooks.on('renderActorSheet', CoC7CharacterSheet.renderSheet)
 Hooks.on('renderItemSheet', CoC7CharacterSheet.renderSheet)
 
-// Hooks.on('dropCanvasData', CoC7Parser.onDropSomething);
 Hooks.on('getSceneControlButtons', CoC7Menu.getButtons)
 Hooks.on('renderSceneControls', CoC7Menu.renderControls)
 
@@ -497,3 +505,7 @@ function _onLeftClick (event) {
 CONFIG.ui.settings = CoC7SettingsDirectory
 CONFIG.ui.compendium = CoC7CompendiumDirectory
 CONFIG.ui.actors = CoC7ActorDirectory
+
+Hooks.on('drawNote', DrawNote)
+Hooks.on('renderCoC7JournalSheet', RenderCoC7JournalSheet)
+Hooks.on('renderJournalTextPageSheet', RenderJournalTextPageSheet)

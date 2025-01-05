@@ -1,4 +1,4 @@
-/* global $, game, renderTemplate, Roll, ui */
+/* global $, foundry, game, renderTemplate, Roll, ui */
 import { COC7 } from '../../config.js'
 import { CoC7Check } from '../../check.js'
 import { CoC7Dice } from '../../dice.js'
@@ -105,9 +105,7 @@ export class SanCheckCard extends ChatCardActor {
   }
 
   get maxSanLoss () {
-    return new Roll(this.sanData.sanMax.toString()).evaluate({
-      maximize: true
-    }).total
+    return new Roll(this.sanData.sanMax.toString())[(!foundry.utils.isNewerVersion(game.version, '12') ? 'evaluate' : 'evaluateSync')/* // FoundryVTT v11 */]({ maximize: true }).total
   }
 
   get sanLossReasonEncountered () {
@@ -220,10 +218,10 @@ export class SanCheckCard extends ChatCardActor {
         this.state.cthulhuMythosAwarded = true
         const cthulhuMythosSkill = this.actor.cthulhuMythosSkill
         const oldValue =
-          cthulhuMythosSkill.data.data.adjustments.experience || 0
+          cthulhuMythosSkill.system.adjustments.experience || 0
         if (cthulhuMythosSkill) {
           await cthulhuMythosSkill.update({
-            'data.adjustments.experience': oldValue + amountGained
+            'system.adjustments.experience': oldValue + amountGained
           })
         }
         this.mythosGain = amountGained
@@ -245,7 +243,12 @@ export class SanCheckCard extends ChatCardActor {
     this.state.involuntaryActionPerformed = this.sanCheck.passed
     this.state.sanLossRolled = true
     this.state.ignoreSanCheck = true
-    this.sanLoss = this.sanLossFormula
+    this.preHardenedSanLoss = this.originalSanLoss = this.sanLossFormula
+    this.sanLoss = this.applyMythosHardened(this.preHardenedSanLoss)
+  }
+
+  applyMythosHardened (sanLoss) {
+    return this.actor.useMythosHardened ? Math.floor(sanLoss / 2) : sanLoss
   }
 
   async rollSan () {
@@ -268,40 +271,45 @@ export class SanCheckCard extends ChatCardActor {
       this.state.sanLossApplied = true
       this.state.intRolled = true
       this.state.insanity = false
-      this.sanLoss = 0
+      this.preHardenedSanLoss = 0
+      this.originalSanLoss = 0
     } else if (typeof this.sanLossFormula === 'number') {
       this.state.sanLossRolled = true
+      this.originalSanLoss = this.sanLossFormula
       if (this.sanData.sanReason) {
-        this.sanLoss = this.actor.maxLossToSanReason(
+        const max = this.actor.maxLossToSanReason(
           this.sanData.sanReason,
-          this.sanLossFormula
+          this.sanData.sanMax
         )
-        if (this.sanLoss < this.sanLossFormula) {
+        this.preHardenedSanLoss = this.originalSanLoss
+        if (this.preHardenedSanLoss > max) {
+          this.preHardenedSanLoss = max
           this.state.limitedLossToCreature = true
         }
       } else {
-        this.sanLoss = this.sanLossFormula
+        this.preHardenedSanLoss = this.originalSanLoss
       }
     } else if (this.sanCheck.isFumble) {
       this.state.sanLossRolled = true
-      this.sanLoss = this.actor.maxLossToSanReason(
+      this.originalSanLoss = new Roll(this.sanData.sanMax)[(!foundry.utils.isNewerVersion(game.version, '12') ? 'evaluate' : 'evaluateSync')/* // FoundryVTT v11 */]({ maximize: true }).total
+      this.preHardenedSanLoss = this.actor.maxLossToSanReason(
         this.sanData.sanReason,
-        this.sanData.sanMax
+        this.originalSanLoss
       )
     } else if (this.sanData.sanReason) {
-      const min = new Roll(this.sanLossFormula).evaluate({
-        minimize: true
-      }).total
+      const min = new Roll(this.sanLossFormula)[(!foundry.utils.isNewerVersion(game.version, '12') ? 'evaluate' : 'evaluateSync')/* // FoundryVTT v11 */]({ minimize: true }).total
       const max = this.actor.maxLossToSanReason(
         this.sanData.sanReason,
         this.sanData.sanMax
       )
       if (min >= max) {
         this.state.sanLossRolled = true
-        this.sanLoss = max
+        this.preHardenedSanLoss = this.originalSanLoss = this.max
         this.state.limitedLossToCreature = true
       }
     }
+
+    this.sanLoss = this.applyMythosHardened(this.preHardenedSanLoss)
   }
 
   async rollSanLoss () {
@@ -320,7 +328,9 @@ export class SanCheckCard extends ChatCardActor {
       this.state.limitedLossToCreature = true
     }
 
-    this.sanLoss = Math.min(this.sanLossRoll.total, max)
+    this.originalSanLoss = this.sanLossRoll.total
+    this.preHardenedSanLoss = Math.min(this.originalSanLoss, max)
+    this.sanLoss = this.applyMythosHardened(this.preHardenedSanLoss)
     this.state.sanLossRolled = true
   }
 

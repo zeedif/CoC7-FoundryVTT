@@ -42,7 +42,7 @@ export class CoCIDEditor extends FormApplication {
     }
     sheetData.eras.sort(CoC7Utilities.sortByNameKey)
 
-    const CoCIDKeys = foundry.utils.flattenObject(game.i18n.translations.CoC7.CoCIDFlag.keys ?? {})
+    const CoCIDKeys = Object.assign(foundry.utils.flattenObject(game.i18n._fallback.CoC7?.CoCIDFlag?.keys ?? {}), foundry.utils.flattenObject(game.i18n.translations.CoC7?.CoCIDFlag?.keys ?? {}))
     const prefix = new RegExp('^' + CoC7Utilities.quoteRegExp(sheetData.idPrefix))
     sheetData.existingKeys = Object.keys(CoCIDKeys).reduce((obj, k) => {
       if (k.match(prefix)) {
@@ -64,7 +64,7 @@ export class CoCIDEditor extends FormApplication {
       })
       const usedEras = {}
       const uniqueWorldPriority = {}
-      sheetData.worldDocumentInfo = worldDocuments.map((d) => {
+      sheetData.worldDocumentInfo = await Promise.all(worldDocuments.map(async (d) => {
         if (d.flags.CoC7.cocidFlag.eras) {
           Object.entries(d.flags.CoC7.cocidFlag.eras).filter(e => e[1]).map(e => {
             if (!Object.prototype.hasOwnProperty.call(uniqueWorldPriority, d.flags.CoC7.cocidFlag.priority + '/' + e[0])) {
@@ -80,6 +80,12 @@ export class CoCIDEditor extends FormApplication {
         for (const era of eras) {
           usedEras[era] = COC7.eras[era] ?? '?'
         }
+        const folders = []
+        let e = d?.folder
+        while (e?.name) {
+          folders.unshift(e?.name)
+          e = e.folder
+        }
         return {
           eras: eras.reduce(function (all, current) {
             all[current] = true
@@ -87,10 +93,10 @@ export class CoCIDEditor extends FormApplication {
           }, {}),
           priority: d.flags.CoC7.cocidFlag.priority,
           lang: d.flags.CoC7.cocidFlag.lang ?? 'en',
-          link: TextEditor.enrichHTML(d.link, { async: false }),
-          folder: d?.folder?.name
+          link: await TextEditor.enrichHTML(d.link, { async: true }),
+          folder: folders.map(n => n.indexOf(' ') > -1 ? '"' + n + '"' : n).join(' &gt; ')
         }
-      })
+      }))
       if (Object.entries(uniqueWorldPriority).filter(c => c[1] > 1).length > 0) {
         sheetData.warnDuplicateWorldPriority = true
       }
@@ -102,7 +108,7 @@ export class CoCIDEditor extends FormApplication {
         scope: 'compendiums'
       })
       const uniqueCompendiumPriority = {}
-      sheetData.compendiumDocumentInfo = compendiumDocuments.map((d) => {
+      sheetData.compendiumDocumentInfo = await Promise.all(compendiumDocuments.map(async (d) => {
         if (d.flags.CoC7.cocidFlag.eras) {
           Object.entries(d.flags.CoC7.cocidFlag.eras).filter(e => e[1]).map(e => {
             if (!Object.prototype.hasOwnProperty.call(uniqueCompendiumPriority, d.flags.CoC7.cocidFlag.priority + '/' + e[0])) {
@@ -118,6 +124,18 @@ export class CoCIDEditor extends FormApplication {
         for (const era of eras) {
           usedEras[era] = COC7.eras[era] ?? '?'
         }
+        const folders = []
+        let e = d?.folder
+        while (e?.name) {
+          folders.unshift(e?.name)
+          e = e.folder
+        }
+        folders.unshift(d.compendium.metadata.label)
+        e = d?.compendium.folder
+        while (e?.name) {
+          folders.unshift(e?.name)
+          e = e.folder
+        }
         return {
           eras: eras.reduce(function (all, current) {
             all[current] = true
@@ -125,10 +143,10 @@ export class CoCIDEditor extends FormApplication {
           }, {}),
           priority: d.flags.CoC7.cocidFlag.priority,
           lang: d.flags.CoC7.cocidFlag.lang ?? 'en',
-          link: TextEditor.enrichHTML(d.link, { async: false }),
-          folder: d?.folder?.name ?? ''
+          link: await TextEditor.enrichHTML(d.link, { async: true }),
+          folder: folders.map(n => n.indexOf(' ') > -1 ? '"' + n + '"' : n).join(' &gt; ')
         }
-      })
+      }))
       if (Object.entries(uniqueCompendiumPriority).filter(c => c[1] > 1).length > 0) {
         sheetData.warnDuplicateCompendiumPriority = true
       }
@@ -225,7 +243,9 @@ export class CoCIDEditor extends FormApplication {
     event.preventDefault()
     const propertyId = event.currentTarget.dataset.property
     await CoCIDEditor.eraToggle(this.object, propertyId)
-    this.render()
+    const options = foundry.utils.duplicate(this.options)
+    await this.close()
+    await this.render(true, options)
   }
 
   async _updateObject (event, formData) {
